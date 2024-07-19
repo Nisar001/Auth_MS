@@ -1,47 +1,87 @@
-import mongoose, { Document, model, Schema } from "mongoose";
+import { Document, Schema, model } from "mongoose";
 
 export interface IAuth extends Document {
-   _id: string
-   isVerified?: boolean
-   otp?:string
-   secret?: string
-   auth_method?: 'email' | 'phone' | 'authenticator'
-   is2FAenabled?:boolean
-   resetPasswordToken?: string
+  username: string;
+  password: string;
+  email: string;
+  phone: string;
+  isVerified?: boolean;
+  otp?: string;
+  secret?: string;
+  auth_method?: "email" | "phone" | "authenticator";
+  isTwoFAEnabled?: boolean;
+  resetPasswordToken?: string;
+  address: string;
+  role?: "admin" | "superAdmin" | "user";
+  dob: Date;
+  temp_email?: string;
+  temp_phone?: string;
 }
 
-const AuthShecma: Schema = new Schema({
-   _id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-   },
-   isVerified:{
+const AuthSchema: Schema = new Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    isVerified: {
       type: Boolean,
       default: false,
-   },
-   otp:{
+    },
+    otp: {
       type: String,
-   },
-   secret:{
-      type: String
-   },
-   auth_method:{
+    },
+    secret: {
       type: String,
-      enum: ['email', 'phone', 'authenticator'],
-      default: 'email',
-   },
-   is2FAenabled:{
+    },
+    auth_method: {
+      type: String,
+      enum: ["email", "phone", "authenticator"],
+      default: "email",
+    },
+    isTwoFAEnabled: {
       type: Boolean,
       default: false,
-   },
-   resetPasswordToken:{
+    },
+    resetPasswordToken: {
       type: String,
-      default: true,
-   }
+      default: undefined,
+    },
+    address: {
+      type: String,
+      required: true,
+    },
+    role: {
+      type: String,
+      enum: ["admin", "superAdmin", "user"],
+      default: "user",
+    },
+    dob: {
+      type: Date,
+      required: true,
+    },
+    temp_email: { type: String },
+    temp_phone: { type: String },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  },
+);
 
-},{
-   timestamps: true,
-})
-
-export const Auth = model<IAuth>('Auth', AuthShecma)
+export const Auth = model<IAuth>("User", AuthSchema);

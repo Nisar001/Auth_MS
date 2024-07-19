@@ -2,9 +2,12 @@
   "name": "user_ms",
   "version": "1.0.0",
   "description": "",
-  "main": "server.ts",
+  "main": "index.js",
   "scripts": {
-    "start": "nodemon"
+    "dev": "nodemon",
+    "build": "npm install && npx tsc",
+    "start": "node ./dist/index.js",
+    "local": "env-cmd -f .env.e2e npm run dev"
   },
   "keywords": [],
   "author": "",
@@ -47,7 +50,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
+    "@types/morgan": "^1.9.9",
     "globals": "^15.8.0",
+    "prettier": "3.3.3",
+    "ts-node": "^10.9.2",
     "typescript": "^5.5.3",
     "typescript-eslint": "^7.16.1"
   }

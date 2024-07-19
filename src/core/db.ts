@@ -1,17 +1,18 @@
-import mongoose from 'mongoose'
-import dotenv from 'dotenv'
-import 'colors'
-dotenv.config()
-import {config} from '../config/config'
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import "colors";
+dotenv.config();
 
-const url = config.mongoURI
+const mongoUrl: string = process.env.MONGO_URL as string;
 
-export const ConnectDB = async() => {
-   try {
-      const connection = await mongoose.connect(url)
-      console.log(`Database connected on ${connection.connection.host}`.bgGreen.white)
-   } catch (error) {
-      console.log(`Database not Connected `.bgRed.white, error)
-      process.exit(1)
-   }
-}
+export const ConnectDB = async () => {
+  try {
+    const connection = await mongoose.connect(mongoUrl);
+    console.log(
+      `Database connected on ${connection.connection.host}`.bgGreen.white,
+    );
+  } catch (error) {
+    console.log(`Database not Connected `.bgRed.white, error);
+    process.exit(1);
+  }
+};

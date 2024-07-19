@@ -1,23 +1,31 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import { ConnectDB } from './core/db'
-// import router from './app.routes'
-import { connectRabbitMQ } from './services/rabbitmq'
-dotenv.config()
+import express, { Request, Response, NextFunction } from "express";
+import dotenv from "dotenv";
+import { ConnectDB } from "./core/db";
+import router from "./app.routes";
+import morgan from "morgan";
+import { logger, stream } from "./logger";
 
+// import { connectRabbitMQ } from './services/rabbitmq'
+dotenv.config();
 
-const app = express()
-const port = process.env.PORT
+const app = express();
+const port = process.env.PORT;
+app.use(morgan("combined", { stream }));
 
-ConnectDB()
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
+ConnectDB();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 //router
-// app.use('/api/v1',router)
+app.use("/api/v1", router);
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  logger.info(`API hit: ${req.method} ${req.url}`);
+  next();
+});
 
 app.listen(port, () => {
-    console.log(`Server is running on port: ${port}`)
-})
+  logger.info(`Server is running on port: ${port}`.bgCyan.white);
+});
 
-connectRabbitMQ()
+// connectRabbitMQ()
