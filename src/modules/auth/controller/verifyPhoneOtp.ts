@@ -1,4 +1,4 @@
-import { Auth } from "@models/auth";
+import { Auth } from "../../../models/auth";
 import { Request, Response } from "express";
 
 export const verifyNewPhoneOtp = async (req: Request, res: Response) => {

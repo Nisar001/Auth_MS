@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { authenticator } from "otplib";
-import { Auth } from "@models/auth";
-import { generate_token } from "@helpers/jwtHelper";
-import { verifyTotpToken } from "@services/authenticator";
+import { Auth } from "../../../models/auth";
+import { generate_token } from "../../../helpers/jwtHelper";
+import { verifyTotpToken } from "../../../services/authenticator";
 
 export const verify_user_otp = async (req: Request, res: Response) => {
   try {

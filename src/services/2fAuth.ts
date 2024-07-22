@@ -1,11 +1,11 @@
-import { transporter } from "@core/config/email"
-import { twilioClient } from "@core/config/sms"
+import { transporter } from "../core/config/email"
+import { twilioClient } from "../core/config/sms"
 
 
 export const send_sms = async (phone: string, code: string) => {
 	await twilioClient.messages.create({
 		body: `Your verification code is ${code}`,
-		from: process.env.TWILIO_PHONE_NUMBER,
+		from: process.env.TWILIO_NUMBER,
 		to: `+91${phone}`,
 	})
 }
@@ -19,7 +19,7 @@ export const send_email = async (email: string, code: string) => {
 	})
 }
 
-export const sendPasswordResetEmail = async (user:any, token:string) => {
+export const sendPasswordResetEmail = async (user: any, token: string) => {
 	const resetUrl = `${process.env.LOCALHOST_URL}/reset-password?token=${token}`
 	await transporter.sendMail({
 		from: process.env.GMAIL,
