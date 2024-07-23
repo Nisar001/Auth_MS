@@ -6,7 +6,6 @@ export interface IAuth extends Document {
   email: string;
   phone: string;
   isVerified?: boolean;
-  otp?: string;
   secret?: string;
   auth_method?: "email" | "phone" | "authenticator";
   isTwoFAEnabled?: boolean;
@@ -42,9 +41,6 @@ const AuthSchema: Schema = new Schema(
     isVerified: {
       type: Boolean,
       default: false,
-    },
-    otp: {
-      type: String,
     },
     secret: {
       type: String,
@@ -84,4 +80,4 @@ const AuthSchema: Schema = new Schema(
   },
 );
 
-export const Auth = model<IAuth>("User", AuthSchema);
+export const Auth = model<IAuth>("user", AuthSchema);

@@ -1,5 +1,6 @@
 import { generate_random_number } from '../../../core/utils'
 import { Auth } from '../../../models/auth'
+import { Otp } from '../../../models/otp'
 import { send_email } from '../../../services/2fAuth'
 import { Request, Response } from 'express'
 
@@ -17,7 +18,16 @@ export const updateUserEmail = async (req: Request, res: Response) => {
             .json({ error: 'Existing email and entered email cannot be same' })
       }
       const otp = generate_random_number(6).toString()
-      user.otp = otp
+      const checkUser = await Otp.findOne({ _user: user._id })
+      if (checkUser) {
+         checkUser.otpCode = otp
+         await checkUser.save()
+      } else {
+         await Otp.create({
+            otpCode: otp,
+            _user: user._id
+         })
+      }
       user.temp_email = newEmail
       await user.save()
       await send_email(newEmail, otp)

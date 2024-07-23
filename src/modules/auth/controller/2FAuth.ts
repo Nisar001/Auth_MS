@@ -1,5 +1,6 @@
 import { generate_random_number } from '../../../core/utils'
 import { Auth } from '../../../models/auth'
+import { Otp } from '../../../models/otp'
 import { generateTotpQrcode, generateTotpSecret } from '../../../services/authenticator'
 import { send_email, send_sms } from '../../../services/2fAuth'
 import { Request, Response } from 'express'
@@ -11,20 +12,30 @@ export const twofasend = async (req: Request, res: Response) => {
       if (!user) {
          return res.status(400).json({ error: 'No user found with this id..' })
       }
-      const otp = generate_random_number(6).toString()
+      const code = generate_random_number(6).toString()
+      const checkUser = await Otp.findOne({ _user: user._id })
+      if (checkUser) {
+         checkUser.otpCode = code
+         await checkUser.save()
+      } else {
+         await Otp.create({
+            otpCode: code,
+            _user: user._id
+         })
+      }
       if (auth_method === 'email') {
-         await send_email(user.email, otp)
-         user.otp = otp
+         await send_email(user.email, code)
          user.auth_method = auth_method
          await user.save()
          return res.status(200).json({ message: `OTP sent to email: ${user.email}` })
-      } else if (auth_method === 'phone') {
-         await send_sms(user.phone, otp)
-         user.otp = otp
+      }
+      else if (auth_method === 'phone') {
+         await send_sms(user.phone, code)
          user.auth_method = auth_method
          await user.save()
          return res.status(200).json({ message: `OTP sent to phone: ${user.phone}` })
-      } else if (auth_method === 'authenticator') {
+      }
+      else if (auth_method === 'authenticator') {
          const { secret, otpauth } = generateTotpSecret(user.email)
          user.secret = secret
          user.isTwoFAEnabled = true

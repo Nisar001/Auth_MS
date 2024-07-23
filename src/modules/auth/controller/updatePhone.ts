@@ -1,3 +1,4 @@
+import { Otp } from "../../../models/otp";
 import { generate_random_number } from "../../../core/utils";
 import { Auth } from "../../../models/auth";
 import { send_sms } from "../../../services/2fAuth";
@@ -10,6 +11,7 @@ export const updatePhone = async (req: Request, res: Response) => {
       const { _id } = req.user
       const { newPhone } = req.body
       const user = await Auth.findById(_id)
+      const OTP = await Otp.findOne({ _user: user._id })
       if (!user) {
          return res.status(400).json({ error: 'Login first..' })
       }
@@ -19,7 +21,16 @@ export const updatePhone = async (req: Request, res: Response) => {
             .json({ error: 'Existing phone and entered phone cannot be same.' })
       }
       const otp = generate_random_number(6).toString()
-      user.otp = otp
+      const checkUser = await Otp.findOne({ _user: user._id })
+      if (checkUser) {
+         checkUser.otpCode = otp
+         await checkUser.save()
+      } else {
+         await Otp.create({
+            otpCode: otp,
+            _user: user._id
+         })
+      }
       user.temp_phone = newPhone
       await user.save()
       await send_sms(newPhone, otp)

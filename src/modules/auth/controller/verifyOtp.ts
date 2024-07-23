@@ -3,6 +3,7 @@ import { authenticator } from "otplib";
 import { Auth } from "../../../models/auth";
 import { generate_token } from "../../../helpers/jwtHelper";
 import { verifyTotpToken } from "../../../services/authenticator";
+import { Otp } from "../../../models/otp";
 
 export const verify_user_otp = async (req: Request, res: Response) => {
   try {
@@ -11,6 +12,7 @@ export const verify_user_otp = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Fields cannot be empty" });
     }
     const user = await Auth.findById(id);
+    const OTP = await Otp.findOne({ _user: user._id })
     if (!user) {
       return res.status(400).json({ error: "User not found" });
     }
@@ -23,11 +25,11 @@ export const verify_user_otp = async (req: Request, res: Response) => {
       }
       isOtpVerified = true;
     } else {
-      if (!user.otp) {
+      if (!OTP.otpCode) {
         return res.status(400).json({ error: "OTP is expired" });
       }
       // Check if OTP matches
-      if (user.otp !== otp) {
+      if (OTP.otpCode !== otp) {
         return res.status(400).json({ error: "OTP mismatch" });
       }
       isOtpVerified = true;
@@ -35,7 +37,7 @@ export const verify_user_otp = async (req: Request, res: Response) => {
 
     if (isOtpVerified) {
       user.isVerified = true;
-      user.otp = undefined; // Clear the OTP
+      OTP.otpCode = null; // Clear the OTP
       user.secret = undefined; //Clear the secret
       const payload = {
         _id: user._id.toString(),
@@ -43,6 +45,8 @@ export const verify_user_otp = async (req: Request, res: Response) => {
       const token = generate_token(payload);
 
       await user.save();
+      await OTP.save();
+
       return res.status(200).json({
         message: "OTP verified successfully",
         data: {
@@ -54,6 +58,6 @@ export const verify_user_otp = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Invalid OTP" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ error: error });
+    return res.status(500).json({ error: error.message });
   }
 };
