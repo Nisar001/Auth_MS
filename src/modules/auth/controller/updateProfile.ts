@@ -5,9 +5,9 @@ export const profileUpdate = async (req: Request, res: Response) => {
    try {
       const { _id } = req.user
       const { address, dob } = req.body
-      if ([address, dob].some((field: string) => field.trim() === '')) {
-         return res.status(400).json({ error: 'Fields cannot be empty' })
-      }
+      // if ([address, dob].some((field: string) => field.trim() === '')) {
+      //    return res.status(400).json({ error: 'Fields cannot be empty' })
+      // }
       const user = await Auth.findById(_id).select(
          '-password -resetPasswordToken -auth_method -secret -otp'
       )
@@ -19,7 +19,6 @@ export const profileUpdate = async (req: Request, res: Response) => {
       }
       return res.status(400).json({ error: 'Please provide some field to update' })
    } catch (error) {
-      console.log(error)
       return res.status(500).json({ error: error.message })
    }
 }

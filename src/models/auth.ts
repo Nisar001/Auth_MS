@@ -10,8 +10,8 @@ export interface IAuth extends Document {
   auth_method?: "email" | "phone" | "authenticator";
   isTwoFAEnabled?: boolean;
   resetPasswordToken?: string;
-  address: string;
-  role?: "admin" | "superAdmin" | "user";
+  address: object;
+  role?: "admin" | "superAdmin" | "user" | "seller";
   dob: Date;
   temp_email?: string;
   temp_phone?: string;
@@ -59,12 +59,25 @@ const AuthSchema: Schema = new Schema(
       default: undefined,
     },
     address: {
-      type: String,
-      required: true,
+      houseNo: {
+        type: String
+      },
+      street: {
+        type: String
+      },
+      area: {
+        type: String
+      },
+      city: {
+        type: String
+      },
+      country: {
+        type: String
+      }
     },
     role: {
       type: String,
-      enum: ["admin", "superAdmin", "user"],
+      enum: ["admin", "superAdmin", "user", "seller"],
       default: "user",
     },
     dob: {
