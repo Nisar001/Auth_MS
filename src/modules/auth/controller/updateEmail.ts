@@ -1,42 +1,68 @@
-import { generate_random_number } from '../../../core/utils'
+import { generate_random_number, isValidEmail, generateOtpExpirationTime } from '../../../core/utils'
 import { Auth } from '../../../models/auth'
-import { Otp } from '../../../models/otp'
+import { Otp, OtpTypes } from '../../../models/otp'
 import { send_email } from '../../../services/2fAuth'
 import { Request, Response } from 'express'
 
 export const updateUserEmail = async (req: Request, res: Response) => {
    try {
       const { _id } = req.user
-      const { newEmail } = req.body
+      const { email } = req.body
+
+      // Validate email using Regex
+      if (!isValidEmail(email)) {
+         return res.status(400).json({ error: 'Invalid email format' })
+      }
+
+      const otp = generate_random_number(6).toString()
+
       const user = await Auth.findById(_id)
       if (!user) {
          return res.status(400).json({ error: 'Login first..' })
       }
-      if (user.email === newEmail) {
+
+      const existigEmail = await Auth.findOne({ email })
+      if (existigEmail) {
+         return res.status(400).json({ message: "This email is already in use by another user." })
+      }
+
+      if (user.email === email) {
          return res
             .status(400)
             .json({ error: 'Existing email and entered email cannot be same' })
       }
-      const otp = generate_random_number(6).toString()
-      const checkUser = await Otp.findOne({ _user: user._id })
-      if (checkUser) {
-         checkUser.otpCode = otp
-         await checkUser.save()
+
+      if (!user.isEmailVerified) {
+         return res
+            .status(400)
+            .json({ error: 'Please verify your existing email before updating.. ' })
+      }
+      const otpExpire = generateOtpExpirationTime();
+
+      const otpData = await Otp.findOne({ _user: _id })
+
+      if (otpData) {
+         otpData.otp = otp
+         otpData.purpose = OtpTypes.UpdateEmail
+         otpData.otpExpireAt = otpExpire
+         await otpData.save()
       } else {
          await Otp.create({
-            otpCode: otp,
-            _user: user._id
+            otp,
+            otpExpireAt: otpExpire,
+            purpose: OtpTypes.UpdateEmail,
+            _user: _id,
          })
       }
-      user.temp_email = newEmail
+
+      user.tempEmail = email
       await user.save()
-      await send_email(newEmail, otp)
-      return res
-         .status(200)
-         .json({
-            message: 'An otp has been sent to verify your email.',
-            data: { email: newEmail },
-         })
+
+      await send_email(email, otp)
+      return res.status(200).json({
+         message: 'An OTP has been sent to verify your Old email.',
+         data: { oldEmail: user.email, newEmail: email },
+      })
    } catch (error) {
       console.log(error)
       return res.status(500).json({ error: error.message })

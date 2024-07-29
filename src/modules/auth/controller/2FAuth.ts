@@ -1,45 +1,61 @@
-import { generate_random_number } from '../../../core/utils'
+import { generate_random_number, generateOtpExpirationTime } from '../../../core/utils'
 import { Auth } from '../../../models/auth'
-import { Otp } from '../../../models/otp'
+import { Otp, OtpTypes } from '../../../models/otp'
 import { generateTotpQrcode, generateTotpSecret } from '../../../services/authenticator'
 import { send_email, send_sms } from '../../../services/2fAuth'
 import { Request, Response } from 'express'
+import { isValidObjectId } from 'mongoose'
 
 export const twofasend = async (req: Request, res: Response) => {
    try {
-      const { id, auth_method } = req.body
+      const { id, authMethod } = req.body
+      const code = generate_random_number(6).toString()
+
+      if (!isValidObjectId(id)) {
+         return res.status(400).json({ error: 'Invalid ObjectId..' })
+      }
+
       const user = await Auth.findById(id)
       if (!user) {
          return res.status(400).json({ error: 'No user found with this id..' })
       }
-      const code = generate_random_number(6).toString()
-      const checkUser = await Otp.findOne({ _user: user._id })
-      if (checkUser) {
-         checkUser.otpCode = code
-         await checkUser.save()
-      } else {
-         await Otp.create({
-            otpCode: code,
-            _user: user._id
-         })
-      }
-      if (auth_method === 'email') {
-         await send_email(user.email, code)
-         user.auth_method = auth_method
-         await user.save()
-         return res.status(200).json({ message: `OTP sent to email: ${user.email}` })
-      }
-      else if (auth_method === 'phone') {
-         await send_sms(user.phone, code)
-         user.auth_method = auth_method
-         await user.save()
-         return res.status(200).json({ message: `OTP sent to phone: ${user.phone}` })
-      }
-      else if (auth_method === 'authenticator') {
+      const otpExpire = new Date(Date.now() + 5 * 60 * 1000)
+
+      if (authMethod === 'email' || authMethod === 'phone') {
+
+         const checkUserOtp = await Otp.findOne({ _user: user._id })
+         // console.log(otpExpire.toLocaleString())
+         if (checkUserOtp) {
+            checkUserOtp.otp = code
+            checkUserOtp.purpose = OtpTypes.Signup
+            checkUserOtp.otpExpireAt = otpExpire
+            console.log(`otpExipre:  ${otpExpire.toLocaleString()}`)
+            console.log(`data otp:  ${checkUserOtp.otpExpireAt.toLocaleString()}`)
+            await checkUserOtp.save()
+         } else {
+            await Otp.create({
+               otp: code,
+               otpExpireAt: otpExpire,
+               purpose: OtpTypes.Signup,
+               _user: user._id,
+            })
+         }
+
+         if (authMethod === 'email') {
+            await send_email(user.email, code)
+            user.authMethod = authMethod
+            await user.save()
+            return res.status(200).json({ message: `OTP sent to email: ${user.email}` })
+         } else if (authMethod === 'phone') {
+            await send_sms(user.countryCode, user.phone, code)
+            user.authMethod = authMethod
+            await user.save()
+            return res.status(200).json({ message: `OTP sent to phone: ${user.phone}` })
+         }
+      } else if (authMethod === 'authenticator') {
          const { secret, otpauth } = generateTotpSecret(user.email)
          user.secret = secret
-         user.isTwoFAEnabled = true
-         user.auth_method = auth_method
+         user.authMethod = authMethod
          await user.save()
          const qr = await generateTotpQrcode(otpauth)
          return res.status(200).json({
@@ -48,6 +64,8 @@ export const twofasend = async (req: Request, res: Response) => {
                qrCode: qr,
             },
          })
+      } else {
+         return res.status(400).json({ error: 'Invalid authentication method' })
       }
    } catch (error) {
       console.log(error)

@@ -1,20 +1,26 @@
-import { Document, Schema, model } from "mongoose";
+import { Document, Schema, model } from 'mongoose'
 
 export interface IAuth extends Document {
-  username: string;
-  password: string;
-  email: string;
-  phone: string;
-  isVerified?: boolean;
-  secret?: string;
-  auth_method?: "email" | "phone" | "authenticator";
-  isTwoFAEnabled?: boolean;
-  resetPasswordToken?: string;
-  address: object;
-  role?: "admin" | "superAdmin" | "user" | "seller";
-  dob: Date;
-  temp_email?: string;
-  temp_phone?: string;
+  username: string
+  password: string
+  email: string
+  phone: string
+  countryCode: string
+  isEmailVerified: boolean
+  isPhoneVerified: boolean
+  isVerified: boolean
+  isBlocked: boolean
+  isActive: boolean
+  secret?: string
+  authMethod: 'email' | 'phone' | 'authenticator'
+  isTwoFAEnabled?: boolean
+  resetPasswordToken?: string
+  address?: [object]
+  role: 'user' | 'seller'
+  dob: Date
+  tempEmail?: string
+  tempPhone?: string
+  tempCountryCode?: string
 }
 
 const AuthSchema: Schema = new Schema(
@@ -23,6 +29,7 @@ const AuthSchema: Schema = new Schema(
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
     },
     password: {
       type: String,
@@ -32,23 +39,45 @@ const AuthSchema: Schema = new Schema(
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
     },
     phone: {
       type: String,
       required: true,
       unique: true,
     },
+    countryCode: {
+      type: String,
+      required: true,
+    },
     isVerified: {
       type: Boolean,
       default: false,
     },
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isPhoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     secret: {
       type: String,
     },
-    auth_method: {
+    authMethod: {
       type: String,
-      enum: ["email", "phone", "authenticator"],
-      default: "email",
+      enum: ['email', 'phone', 'authenticator'],
+      default: 'email',
     },
     isTwoFAEnabled: {
       type: Boolean,
@@ -58,39 +87,46 @@ const AuthSchema: Schema = new Schema(
       type: String,
       default: undefined,
     },
-    address: {
-      houseNo: {
-        type: String
+    address: [
+      {
+        street: {
+          type: String,
+        },
+        area: {
+          type: String,
+        },
+        city: {
+          type: String,
+        },
+        zipcode: {
+          type: String,
+        },
+        state: {
+          type: String,
+        },
+        country: {
+          type: String,
+        },
       },
-      street: {
-        type: String
-      },
-      area: {
-        type: String
-      },
-      city: {
-        type: String
-      },
-      country: {
-        type: String
-      }
-    },
+    ],
     role: {
       type: String,
-      enum: ["admin", "superAdmin", "user", "seller"],
-      default: "user",
+      enum: ['seller', 'user'],
+      default: 'user',
     },
     dob: {
       type: Date,
       required: true,
     },
-    temp_email: { type: String },
-    temp_phone: { type: String },
+    tempEmail: { type: String },
+    tempPhone: { type: String },
+    tempCountryCode: { type: String },
   },
   {
     timestamps: true,
     versionKey: false,
-  },
-);
+  }
+)
 
-export const Auth = model<IAuth>("user", AuthSchema);
+
+export const Auth = model<IAuth>('User', AuthSchema)

@@ -1,45 +1,48 @@
-import { Request, Response } from "express";
-import bcrypt from "bcrypt";
-import { Auth } from "../../../models/auth";
+import { Auth } from '../../../models/auth'
+import { Request, Response } from 'express'
+import bcrypt from 'bcrypt'
+import { isValidDate, isValidEmail } from '../../../core/utils'
+
 
 export const register_user = async (req: Request, res: Response) => {
   try {
-    const { username, password, email, phone, address, dob } = req.body;
-    if (!username) {
-      return res.send({ message: "Name is Required" });
+    const { username, password, email, phone, countryCode, dob, role } = req.body
+    const hashedPassword = await bcrypt.hash(password, 10)
+    const existingUser = await Auth.findOne({
+      $or: [{ email: email }, { phone: phone }, { username: username }],
+    })
+    if (existingUser) {
+      if (existingUser.email === email) {
+        return res.status(400).json({ error: 'Cannot use existing email' })
+      }
+      if (existingUser.phone === phone) {
+        return res.status(400).json({ error: 'Cannot use existing phone' })
+      }
+      if (existingUser.username === username) {
+        return res.status(400).json({ error: 'Cannot use existing username' })
+      }
     }
-    if (!password) {
-      return res.send({ message: "Password is Required" });
+    // Validate DOB using moment
+    if (!isValidDate(dob)) {
+      return res.status(400).json({ error: 'Invalid date of birth' })
     }
-    if (!email) {
-      return res.send({ message: "Email is Required" });
+
+    // Validate email using Regex
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email format' })
     }
-    if (!phone) {
-      return res.send({ message: "Phone is Required" });
-    }
-    if (!address) {
-      return res.send({ message: "Address is Required" });
-    }
-    if (!dob) {
-      return res.send({ message: "DOB is Required" });
-    }
-    const userExist = await Auth.findOne({ email });
-    if (userExist) {
-      return res.send({ message: "User Already Registered, Please Login" });
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
     const user = await Auth.create({
       username,
       password: hashedPassword,
       email,
       phone,
-      address,
+      countryCode,
       dob,
-    });
-    return res
-      .status(201)
-      .json({ _user: user._id, message: "User Registered Successfully" });
+      role,
+    })
+    return res.status(201).json({ user: "User Registered Successfully", _user: user._id })
   } catch (error) {
-    return res.status(500).json({ error: error });
+    console.log(error)
+    return res.status(500).json({ error: error.message })
   }
-};
+}

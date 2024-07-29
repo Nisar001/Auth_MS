@@ -1,21 +1,21 @@
-import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-dotenv.config();
-
-const jwt_secret: string = process.env.JWT_SECRET as string;
+import jwt from 'jsonwebtoken'
+import { ObjectId } from 'mongoose'
 
 export interface IPayload {
-  _id: string;
+  _id: string
+  role: string
 }
 
 export const generate_token = (payload: IPayload): string => {
+
   const token = jwt.sign(
     {
       _id: payload,
+      role: payload,
     },
-    jwt_secret.toString(),
-    { expiresIn: process.env.JWT_EXPIRE },
-  );
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE }
+  )
 
-  return token;
-};
+  return token
+}

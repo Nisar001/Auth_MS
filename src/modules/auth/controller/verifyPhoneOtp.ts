@@ -1,32 +1,45 @@
-import { Otp } from "../../../models/otp";
-import { Auth } from "../../../models/auth";
-import { Request, Response } from "express";
-import { isNull } from "lodash";
+import { generate_random_number, generateOtpExpirationTime } from '../../../core/utils'
+import { Auth } from '../../../models/auth'
+import { Otp, OtpTypes } from '../../../models/otp'
+import { send_sms } from '../../../services/2fAuth'
+import { Request, Response } from 'express'
 
-export const verifyNewPhoneOtp = async (req: Request, res: Response) => {
+export const phoneVerification = async (req: Request, res: Response) => {
   try {
-    const { _id } = req.user;
-    const { phone, otp } = req.body;
-    const user = await Auth.findById(_id);
-    const OTP = await Otp.findOne({ _user: user._id })
-    if (OTP.otpCode === otp && user.temp_phone === phone) {
-      user.phone = phone;
-      OTP.otpCode = null;
-      user.temp_phone = undefined;
-      await user.save();
-      await OTP.save();
-      return res.status(200).json({
-        message: "Your phone number has been updated..",
-        data: { item: user.phone },
-      });
+    const { phone } = req.body
+    const user = await Auth.findOne({ phone: phone })
+    const otpExpire = generateOtpExpirationTime();
+
+    const code = generate_random_number(6).toString()
+
+
+
+    if (!user) {
+      return res.status(404).json({ error: 'No user exists with the provided phone' })
     }
-    return res
-      .status(400)
-      .json({
-        error: "Invalid OTP or phone, please provide correct credentials.",
-      });
+
+    const otpData = await Otp.findOne({ _user: user._id })
+    if (otpData) {
+      otpData.otp = code
+      otpData.purpose = OtpTypes.VerifyExistingPhone
+      otpData.otpExpireAt = otpExpire
+      await otpData.save()
+    } else {
+      await Otp.create({
+        otp: code,
+        otpExpireAt: otpExpire,
+        purpose: OtpTypes.VerifyExistingPhone,
+        _user: user._id,
+      })
+    }
+
+    await send_sms(user.countryCode, user.phone, code)
+    return res.status(200).json({
+      message: 'An OTP has been sent to your phone. Please verify it first',
+      data: { phone: user.phone },
+    })
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ error: error });
+    console.log(error)
+    return res.status(500).json({ error: error.message })
   }
-};
+}

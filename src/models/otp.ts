@@ -1,23 +1,44 @@
-import mongoose, { Document, Schema, model } from "mongoose";
+import { Schema, Document, model } from 'mongoose'
 
-export interface IOtp extends Document {
-   _user: string;
-   otpCode: string;
+export enum OtpTypes {
+   Signup = 'SIGN_UP',
+   Login = 'LOGIN',
+   UpdateEmail = 'UPDATE_EMAIL',
+   UpdatePhone = 'UPDATE_PHONE',
+   VerifyExistingEmail = 'VERIFY_EXISTING_EMAIL',
+   VerifyExistingPhone = 'VERIFY_EXISTING_PHONE',
+}
+interface IOtp extends Document {
+   otp?: string
+   otpExpireAt: Date
+   purpose: OtpTypes
+   _user: Schema.Types.ObjectId
 }
 
-const otpScema: Schema = new Schema({
-   _user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'user',
-      required: true
+const otpSchema: Schema = new Schema(
+   {
+      otp: {
+         type: String,
+      },
+      otpExpireAt: {
+         type: Date,
+         required: true,
+      },
+      purpose: {
+         type: String,
+         enum: Object.values(OtpTypes),
+         required: true,
+      },
+      _user: {
+         type: Schema.Types.ObjectId,
+         ref: 'User',
+         required: true,
+      },
    },
-   otpCode: {
-      type: String,
-   },
-},
    {
       timestamps: true,
       versionKey: false,
-   },)
+   }
+)
 
-export const Otp = model<IOtp>("otp", otpScema);
+export const Otp = model<IOtp>('Otp', otpSchema)

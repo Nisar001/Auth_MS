@@ -11,8 +11,10 @@ import {
    updatePhone,
    twofasend,
    profileUpdate,
-   verifyNewEmailOtp,
-   verifyNewPhoneOtp,
+   emailVerification,
+   phoneVerification,
+   changeTwoFA,
+   toggleTwoFA,
 } from '../controller/index'
 import { verify_token } from '../../../middlewares/verifyJWT'
 
@@ -24,6 +26,9 @@ router.post('/verify-otp', verify_user_otp)
 router.post('/send-otp', twofasend)
 router.post('/forgot-password', forgotPassword)
 router.post('/reset-password', resetpassword)
+router.post('/verify/email', emailVerification)
+router.post('/verify/phone', phoneVerification)
+
 
 //secure routes
 router.use(verify_token)
@@ -32,7 +37,9 @@ router.patch('/update-email', updateUserEmail)
 router.patch('/update-password', updateUserPassword)
 router.patch('/update-phone', updatePhone)
 router.patch('/update-profile', profileUpdate)
-router.patch('/verify-new-email', verifyNewEmailOtp)
-router.patch('/verify-new-phone', verifyNewPhoneOtp)
+router.patch('/toggle-two-fa', toggleTwoFA)
+router.patch('/change-two-fa', changeTwoFA)
+
+
 
 export default router

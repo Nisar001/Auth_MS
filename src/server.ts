@@ -5,7 +5,6 @@ import router from "./app.routes";
 import morgan from "morgan";
 import { logger, stream } from "./logger";
 
-import { connectRabbitMQ } from './services/rabbitmq'
 dotenv.config();
 
 const app = express();
@@ -28,4 +27,3 @@ app.listen(port, () => {
   logger.info(`Server is running on port: ${port}`.bgCyan.white);
 });
 
-connectRabbitMQ()

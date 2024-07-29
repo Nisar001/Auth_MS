@@ -1,31 +1,54 @@
-import { Otp } from "../../../models/otp";
-import { Auth } from "../../../models/auth";
-import { Request, Response } from "express";
+import { generate_random_number, isValidEmail, generateOtpExpirationTime } from '../../../core/utils'
+import { Auth } from '../../../models/auth'
+import { Otp, OtpTypes } from '../../../models/otp'
+import { send_email } from '../../../services/2fAuth'
+import { Request, Response } from 'express'
 
-export const verifyNewEmailOtp = async (req: Request, res: Response) => {
+export const emailVerification = async (req: Request, res: Response) => {
   try {
-    const { _id } = req.user;
-    const { email, otp } = req.body;
-    const user = await Auth.findById(_id);
-    const OTP = await Otp.findOne({ _user: user._id })
-
-    if (OTP.otpCode === otp && user.temp_email === email) {
-      user.email = email;
-      OTP.otpCode = null;
-      user.temp_email = undefined;
-      await user.save();
-      await OTP.save();
-      return res.status(200).json({
-        message: "Your email has been updated..",
-        data: { item: user.email },
-      });
+    const { email } = req.body
+    // Validate email using Regex
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email format' })
     }
-    return res
-      .status(400)
-      .json({
-        error: "Invalid OTP or email, please provide correct credentials.",
-      });
+
+    const user = await Auth.findOne({ email })
+    if (!user) {
+      return res.status(404).json({ error: 'No user exists with the provided email' })
+    }
+
+    if (user.isEmailVerified) {
+      return res
+        .status(200)
+        .json({ message: `Your email: ${user.email} is already verified.` })
+    }
+    const otpExpire = generateOtpExpirationTime();
+
+    const code = generate_random_number(6).toString()
+
+
+    const otpData = await Otp.findOne({ _user: user._id })
+    if (otpData) {
+      otpData.otp = code
+      otpData.purpose = OtpTypes.VerifyExistingEmail
+      otpData.otpExpireAt = otpExpire
+      await otpData.save()
+    } else {
+      await Otp.create({
+        otp: code,
+        otpExpireAt: otpExpire,
+        purpose: OtpTypes.VerifyExistingEmail,
+        _user: user._id,
+      })
+    }
+
+    await send_email(user.email, code)
+    return res.status(200).json({
+      message: 'An OTP has been sent to your email. Please verify it.',
+      data: { email: user.email },
+    })
   } catch (error) {
-    return res.status(500).json({ error: error });
+    console.log(error)
+    return res.status(500).json({ error: error.message })
   }
-};
+}
